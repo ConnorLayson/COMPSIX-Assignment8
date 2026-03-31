@@ -1,90 +1,31 @@
-const { Sequelize, DataTypes } = require('sequelize');
-require('dotenv').config();
+const { Sequelize, DataTypes } = require("sequelize");
 
-// Create Sequelize instance
-const db = new Sequelize({
-  dialect: 'sqlite',
-  storage: `database/${process.env.DB_NAME}` || 'database/task_management.db',
-  logging: console.log
+const sequelize = new Sequelize({
+  dialect: "sqlite",
+  storage: process.env.DB_NAME
 });
 
-// Define Project model
-const Project = db.define('Project', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    description: {
-        type: DataTypes.TEXT
-    },
-    status: {
-        type: DataTypes.STRING,
-        defaultValue: 'active'
-    },
-    dueDate: {
-        type: DataTypes.DATE
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    }
+const User = sequelize.define("User", {
+  id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+  username: { type: DataTypes.STRING, allowNull: false },
+  email: { type: DataTypes.STRING, allowNull: false, unique: true },
+  password: { type: DataTypes.STRING, allowNull: false }
 });
 
-// Define Task model
-const Task = db.define('Task', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    title: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    description: {
-        type: DataTypes.TEXT
-    },
-    completed: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    priority: {
-        type: DataTypes.STRING,
-        defaultValue: 'medium'
-    },
-    dueDate: {
-        type: DataTypes.DATE
-    },
-    projectId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    }
+const Project = sequelize.define("Project", {
+  name: DataTypes.STRING,
+  userId: DataTypes.INTEGER
 });
 
-// Export for use in other files
-module.exports = { db, Project, Task };
+const Task = sequelize.define("Task", {
+  title: DataTypes.STRING,
+  projectId: DataTypes.INTEGER
+});
 
-// Create database and tables
-async function setupDatabase() {
-    try {
-        await db.authenticate();
-        console.log('Connection to database established successfully.');
-        
-        await db.sync({ force: true });
-        console.log('Database and tables created successfully.');
-        
-        await db.close();
-    } catch (error) {
-        console.error('Unable to connect to the database:', error);
-    }
-}
+User.hasMany(Project, { foreignKey: "userId" });
+Project.belongsTo(User, { foreignKey: "userId" });
 
-// Run setup if this file is executed directly
-if (require.main === module) {
-    setupDatabase();
-}
+Project.hasMany(Task, { foreignKey: "projectId" });
+Task.belongsTo(Project, { foreignKey: "projectId" });
+
+module.exports = { sequelize, User, Project, Task };
